@@ -34,3 +34,40 @@ export async function getProducts(): Promise<Product[]> {
 
   return[...dummyProducts,...fakeProducts]
 }
+
+export async function getSingleProduct(id: number, source: "Fake" | "Dummy"): Promise<Product> {
+  let product: any;
+
+  if (source === "Fake") {
+    const res = await fetch(`https://fakestoreapi.com/products/${id}`);
+    if (!res.ok) throw new Error("Failed to fetch Fake product.");
+    product = await res.json();
+
+    return {
+      id: product.id,
+      title: product.title,
+      price: product.price,
+      description: product.description,
+      category: product.category,
+      image: product.image,
+      rating: product.rating?.rate || 0,
+      source: "Fake"
+    };
+  } else {
+    const realId = id - 1000;
+    const res = await fetch(`https://dummyjson.com/products/${realId}`);
+    if (!res.ok) throw new Error("Failed to fetch Dummy product.");
+    product = await res.json();
+
+    return {
+      id: product.id + 1000,
+      title: product.title,
+      price: product.price,
+      description: product.description,
+      category: product.category,
+      image: product.thumbnail,
+      rating: product.rating,
+      source: "Dummy"
+    };
+  }
+}

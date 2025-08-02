@@ -1,13 +1,14 @@
 import { getProducts } from "@/lib/fetchproducts";
 import Button from "@/components/Button";
 import Image from "next/image";
+import Link from "next/link";
 
 export default async function ProductPage(){
   const products = await getProducts()
   return(
     <main className="mt-15 min-md:py-3 min-md:px-6 w-full flex items-center justify-center">
       <div className="min-md:w-3/4 px-3">
-        <h1 className="mb-3 text-2xl font-bold">Products</h1>
+        <h1 className="mb-3 text-2xl font-bold"><span className="text-white">〢</span>Products</h1>
         <div className="grid md:grid-cols-3 min-lg:grid-cols-5 gap-1.5 grid-cols-2">
           {products.map((product)=>(
             <div 
@@ -26,7 +27,15 @@ export default async function ProductPage(){
               <div className="flex flex-col gap-1.5">
                 <h1 className="font-urbanist truncate text-md font-semibold mt-1.5">{product.title}</h1>
                 <h2 className="font-space-grotesk">${product.price}</h2>
-                <span className="underline text-sm text-slate-700 cursor-pointer">View Details⇁</span>
+                <Link
+                  href={{
+                    pathname: `/products/${product.id}`,
+                    query: { source: product.source },
+                  }}
+                  className="underline text-sm text-slate-700 cursor-pointer"
+                >
+                  View Details⇁
+                </Link>
                 <Button/>
               </div>
             </div>
