@@ -35,6 +35,20 @@ export async function getProducts(): Promise<Product[]> {
   return[...dummyProducts,...fakeProducts]
 }
 
+export async function getCategories(): Promise<string[]> {
+  const [dummyRes, fakeRes] = await Promise.all([
+    fetch("https://dummyjson.com/products/categories"),
+    fetch("https://fakestoreapi.com/products/categories")
+  ]);
+
+  if (!dummyRes.ok || !fakeRes.ok) throw new Error("Failed to fetch categories");
+
+  const dummyCategories = await dummyRes.json();
+  const fakeCategories = await fakeRes.json();
+
+  return [...new Set([...dummyCategories, ...fakeCategories])];
+}
+
 export async function getSingleProduct(id: number, source: "Fake" | "Dummy"): Promise<Product> {
   let product: any;
 
