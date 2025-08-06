@@ -85,3 +85,4 @@ export async function getSingleProduct(id: number, source: "Fake" | "Dummy"): Pr
     };
   }
 }
+

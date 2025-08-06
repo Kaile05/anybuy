@@ -18,8 +18,7 @@ export default async function ProductPage({ searchParams }: Props){
   return(
     <main className="mt-15 min-md:py-3 min-md:px-6 w-full flex items-center justify-center">
       <div className="min-md:w-3/4 max-md:px-3">
-        <h1 className="mb-3 text-2xl font-bold tracking-widest"><span className="text-white">〢</span>Products</h1>
-
+        <h1 className="mb-3 text-2xl font-bold tracking-widest"><span className="text-muted">〢</span>Products</h1>
 
         <div className="flex flex-wrap items-center justify-center gap-2 my-2">
           {["All",...categories].map((cat)=>(
@@ -45,7 +44,7 @@ export default async function ProductPage({ searchParams }: Props){
                     query: { source: product.source },
                   }}
               key={product.id}
-              className="bg-white rounded py-2 px-2 shadow-2xs"
+              className="bg-white rounded py-2 px-2 shadow-2xs ring-1 ring-gray-300 hover:ring-gray-600 transition-colors duration-200"
               >
               <div className="h-[150px] overflow-hidden">
                 <Image
@@ -53,7 +52,7 @@ export default async function ProductPage({ searchParams }: Props){
                   src={product.image}
                   width={150}
                   height={150}      
-                  className="object-contain w-full h-full"
+                  className="object-contain w-full h-full hover:scale-105 transition-transform duration-300"
                 />
               </div>
               <div className="flex flex-col space-y-1.5">
