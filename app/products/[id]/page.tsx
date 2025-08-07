@@ -5,7 +5,6 @@ import Button from "@/components/Button";
 import Link from "next/link";
 import Carousel from "@/components/Carousel";
 
-
 type Props = {
   params: { id: string };
   searchParams?: { source?: "Fake" | "Dummy" };
@@ -65,7 +64,7 @@ export default async function ProductDetailPage({ params, searchParams }: Props)
                   key={product.id}
                   className="p-1.5"
                 >
-                  <Carousel product={product}/>
+                  <Carousel product={product} title=""/>
                 </Link>
               ))}
             </div>
