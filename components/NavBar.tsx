@@ -31,7 +31,7 @@ export default function NavBar() {
 
           <Search />
 
-          <div className="flex gap-1.5 font-urbanist text-md max-sm:hidden">
+          <div className="flex gap-1.5 font-urbanist text-md max-sm:hidden text-white">
             {navLinks.map((link) => (
               <Link key={link.name} href={link.href}>
                 {link.name}
