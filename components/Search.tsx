@@ -2,71 +2,95 @@
 
 import { useEffect, useState } from "react";
 import { Product } from "@/types/product";
-import { getProducts } from "@/lib/fetchproducts";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 
 export default function Search() {
   const pathname = usePathname();
-  const router = useRouter();
 
   const [query, setQuery] = useState("");
   const [allProducts, setAllProducts] = useState<Product[]>([]);
-  const [searched, setSearched] = useState<Product[]>([]);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [loading, setLoading] = useState(true);
 
-  // Clear search when changing pages
+  // Fetch products once when the component mounts
+  useEffect(() => {
+    async function loadProducts() {
+      try {
+        const [dummyRes, fakeRes] = await Promise.all([
+          fetch("https://dummyjson.com/products"),
+          fetch("https://fakestoreapi.com/products"),
+        ]);
+
+        if (!dummyRes.ok || !fakeRes.ok) {
+          throw new Error("Failed to fetch products");
+        }
+
+        const dummyData = await dummyRes.json();
+        const fakeData = await fakeRes.json();
+
+        const dummyProducts: Product[] = dummyData.products.map(
+          (item: any) => ({
+            id: item.id + 1000,
+            title: item.title,
+            price: item.price,
+            description: item.description,
+            category: item.category,
+            image: item.thumbnail,
+            rating: item.rating,
+            source: "Dummy",
+          })
+        );
+
+        const fakeProducts: Product[] = fakeData.map((item: any) => ({
+          id: item.id,
+          title: item.title,
+          price: item.price,
+          description: item.description,
+          category: item.category,
+          image: item.image,
+          rating: item.rating?.rate || 0,
+          source: "Fake",
+        }));
+
+        setAllProducts([...dummyProducts, ...fakeProducts]);
+      } catch (error) {
+        console.error("Search product fetch failed:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadProducts();
+  }, []);
+
+  // Clear search when navigating to another page
   useEffect(() => {
     setQuery("");
-    setSearched([]);
     setActiveIndex(-1);
   }, [pathname]);
 
-  // Load all products
-  useEffect(() => {
-    getProducts()
-      .then(setAllProducts)
-      .catch((error) => {
-        console.error("Failed to load products:", error);
-      });
-  }, []);
+  const searched = query.trim()
+    ? allProducts.filter((product) =>
+        product.title.toLowerCase().includes(query.toLowerCase())
+      )
+    : [];
 
-  // Search products
-  useEffect(() => {
-    if (!query.trim()) {
-      setSearched([]);
-      setActiveIndex(-1);
-      return;
-    }
-
-    const searchQuery = query.toLowerCase().trim();
-
-    const results = allProducts.filter((product) =>
-      product.title.toLowerCase().includes(searchQuery)
-    );
-
-    setSearched(results);
-    setActiveIndex(-1);
-  }, [query, allProducts]);
-
-  // Keyboard navigation
   function handleKeyDown(
     e: React.KeyboardEvent<HTMLInputElement>
   ) {
     if (searched.length === 0) return;
 
-    // Arrow Down
     if (e.key === "ArrowDown") {
       e.preventDefault();
 
       setActiveIndex((prev) =>
-        prev >= searched.length - 1 ? 0 : prev + 1
+        prev < searched.length - 1 ? prev + 1 : 0
       );
     }
 
-    // Arrow Up
-    else if (e.key === "ArrowUp") {
+    if (e.key === "ArrowUp") {
       e.preventDefault();
 
       setActiveIndex((prev) =>
@@ -74,41 +98,56 @@ export default function Search() {
       );
     }
 
-    // Enter
-    else if (e.key === "Enter" && activeIndex >= 0) {
+    if (e.key === "Enter") {
       e.preventDefault();
 
-      const selected = searched[activeIndex];
+      if (activeIndex >= 0) {
+        const selected = searched[activeIndex];
 
-      router.push(
-        `/products/${selected.id}?source=${selected.source}`
-      );
+        window.location.href =
+          `/products/${selected.id}?source=${selected.source}`;
+      }
     }
 
-    // Escape
-    else if (e.key === "Escape") {
+    if (e.key === "Escape") {
       setQuery("");
-      setSearched([]);
       setActiveIndex(-1);
     }
   }
 
   return (
     <div className="w-2/3 relative max-sm:w-full">
-
-      {/* Search Input */}
       <input
+        type="text"
+        inputMode="search"
+        autoComplete="off"
+        spellCheck={false}
         className="w-full h-full bg-white rounded px-2 py-1.5 focus:outline-none text-black text-sm"
         placeholder="Search a Product..."
         value={query}
-        onChange={(e) => setQuery(e.target.value)}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          setActiveIndex(-1);
+        }}
         onKeyDown={handleKeyDown}
       />
 
-      {/* Search Results */}
+      {loading && query.trim() !== "" && (
+        <div className="absolute top-full left-0 w-full bg-white border rounded mt-1 shadow-md z-50 p-3 text-sm text-gray-500">
+          Loading products...
+        </div>
+      )}
+
+      {!loading &&
+        query.trim() !== "" &&
+        searched.length === 0 && (
+          <div className="absolute top-full left-0 w-full bg-white border rounded mt-1 shadow-md z-50 p-3 text-sm text-gray-500">
+            No products found.
+          </div>
+        )}
+
       {searched.length > 0 && (
         <div className="absolute top-full left-0 w-full bg-white border rounded mt-1 shadow-md z-50 overflow-y-auto max-h-80 custom-scrollbar">
-
           {searched.map((product, idx) => (
             <Link
               href={{
@@ -118,14 +157,12 @@ export default function Search() {
                 },
               }}
               key={`${product.source}-${product.id}`}
-              className={`px-3 flex items-center gap-x-2.5 py-1 transition-colors ${
+              className={`px-3 flex items-center gap-x-2.5 py-2 ${
                 idx === activeIndex
                   ? "bg-gray-200"
                   : "hover:bg-gray-100"
               }`}
             >
-
-              {/* Product Image */}
               <Image
                 src={product.image}
                 alt={product.title}
@@ -134,17 +171,13 @@ export default function Search() {
                 className="h-10 w-10 object-contain"
               />
 
-              {/* Product Name */}
               <h1 className="truncate text-black text-sm">
                 {product.title}
               </h1>
-
             </Link>
           ))}
-
         </div>
       )}
-
     </div>
   );
 }
