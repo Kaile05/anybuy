@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import LandingPageSection from "@/components/LandingPageSection";
 import Link from "next/link";
 
