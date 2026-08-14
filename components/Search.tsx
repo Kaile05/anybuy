@@ -2,163 +2,194 @@
 
 import { useEffect, useState } from "react";
 import { Product } from "@/types/product";
+import { getProducts } from "@/lib/fetchproducts";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 export default function Search() {
   const pathname = usePathname();
+  const router = useRouter();
 
   const [query, setQuery] = useState("");
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  // Fetch products once when the component mounts
+  /*
+   * Fetch all products once when Search mounts
+   */
   useEffect(() => {
+    let mounted = true;
+
     async function loadProducts() {
       try {
-        const [dummyRes, fakeRes] = await Promise.all([
-          fetch("https://dummyjson.com/products"),
-          fetch("https://fakestoreapi.com/products"),
-        ]);
+        setLoading(true);
+        setError(false);
 
-        if (!dummyRes.ok || !fakeRes.ok) {
-          throw new Error("Failed to fetch products");
+        const products = await getProducts();
+
+        if (mounted) {
+          setAllProducts(products);
         }
-
-        const dummyData = await dummyRes.json();
-        const fakeData = await fakeRes.json();
-
-        const dummyProducts: Product[] = dummyData.products.map(
-          (item: any) => ({
-            id: item.id + 1000,
-            title: item.title,
-            price: item.price,
-            description: item.description,
-            category: item.category,
-            image: item.thumbnail,
-            rating: item.rating,
-            source: "Dummy",
-          })
-        );
-
-        const fakeProducts: Product[] = fakeData.map((item: any) => ({
-          id: item.id,
-          title: item.title,
-          price: item.price,
-          description: item.description,
-          category: item.category,
-          image: item.image,
-          rating: item.rating?.rate || 0,
-          source: "Fake",
-        }));
-
-        setAllProducts([...dummyProducts, ...fakeProducts]);
       } catch (error) {
-        console.error("Search product fetch failed:", error);
+        console.error("Failed to load search products:", error);
+
+        if (mounted) {
+          setError(true);
+        }
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     }
 
     loadProducts();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  // Clear search when navigating to another page
+  /*
+   * Clear search whenever the user changes pages
+   */
   useEffect(() => {
     setQuery("");
     setActiveIndex(-1);
   }, [pathname]);
 
-  const searched = query.trim()
-    ? allProducts.filter((product) =>
-        product.title.toLowerCase().includes(query.toLowerCase())
-      )
-    : [];
+  /*
+   * Search products
+   */
+  const searchedProducts =
+    query.trim() === ""
+      ? []
+      : allProducts.filter((product) =>
+          product.title
+            .toLowerCase()
+            .includes(query.trim().toLowerCase())
+        );
 
+  /*
+   * Keyboard navigation
+   */
   function handleKeyDown(
     e: React.KeyboardEvent<HTMLInputElement>
   ) {
-    if (searched.length === 0) return;
-
     if (e.key === "ArrowDown") {
       e.preventDefault();
 
+      if (searchedProducts.length === 0) return;
+
       setActiveIndex((prev) =>
-        prev < searched.length - 1 ? prev + 1 : 0
+        prev >= searchedProducts.length - 1 ? 0 : prev + 1
       );
+
+      return;
     }
 
     if (e.key === "ArrowUp") {
       e.preventDefault();
 
+      if (searchedProducts.length === 0) return;
+
       setActiveIndex((prev) =>
-        prev <= 0 ? searched.length - 1 : prev - 1
+        prev <= 0 ? searchedProducts.length - 1 : prev - 1
       );
+
+      return;
     }
 
     if (e.key === "Enter") {
       e.preventDefault();
 
-      if (activeIndex >= 0) {
-        const selected = searched[activeIndex];
+      if (
+        activeIndex >= 0 &&
+        activeIndex < searchedProducts.length
+      ) {
+        const selected = searchedProducts[activeIndex];
 
-        window.location.href =
-          `/products/${selected.id}?source=${selected.source}`;
+        router.push(
+          `/products/${selected.id}?source=${selected.source}`
+        );
+
+        setQuery("");
+        setActiveIndex(-1);
       }
+
+      return;
     }
 
     if (e.key === "Escape") {
+      e.preventDefault();
+
       setQuery("");
       setActiveIndex(-1);
     }
   }
 
   return (
-    <div className="w-2/3 relative max-sm:w-full">
+    <div className="relative w-2/3 max-sm:w-full">
       <input
-        type="text"
-        inputMode="search"
-        autoComplete="off"
-        spellCheck={false}
-        className="w-full h-full bg-white rounded px-2 py-1.5 focus:outline-none text-black text-sm"
+        type="search"
+        name="product-search"
         placeholder="Search a Product..."
         value={query}
+        autoComplete="off"
+        spellCheck={false}
         onChange={(e) => {
           setQuery(e.target.value);
           setActiveIndex(-1);
         }}
         onKeyDown={handleKeyDown}
+        className="relative z-10 w-full h-full rounded bg-white px-2 py-1.5 text-sm text-black focus:outline-none focus:ring-2 focus:ring-gray-400"
       />
 
-      {loading && query.trim() !== "" && (
-        <div className="absolute top-full left-0 w-full bg-white border rounded mt-1 shadow-md z-50 p-3 text-sm text-gray-500">
+      {/* Loading */}
+      {query.trim() !== "" && loading && (
+        <div className="absolute left-0 top-full z-50 mt-1 w-full rounded border bg-white p-3 text-sm text-gray-500 shadow-md">
           Loading products...
         </div>
       )}
 
-      {!loading &&
-        query.trim() !== "" &&
-        searched.length === 0 && (
-          <div className="absolute top-full left-0 w-full bg-white border rounded mt-1 shadow-md z-50 p-3 text-sm text-gray-500">
+      {/* Error */}
+      {query.trim() !== "" && !loading && error && (
+        <div className="absolute left-0 top-full z-50 mt-1 w-full rounded border bg-white p-3 text-sm text-red-500 shadow-md">
+          Failed to load products.
+        </div>
+      )}
+
+      {/* No results */}
+      {query.trim() !== "" &&
+        !loading &&
+        !error &&
+        searchedProducts.length === 0 && (
+          <div className="absolute left-0 top-full z-50 mt-1 w-full rounded border bg-white p-3 text-sm text-gray-500 shadow-md">
             No products found.
           </div>
         )}
 
-      {searched.length > 0 && (
-        <div className="absolute top-full left-0 w-full bg-white border rounded mt-1 shadow-md z-50 overflow-y-auto max-h-80 custom-scrollbar">
-          {searched.map((product, idx) => (
+      {/* Search results */}
+      {searchedProducts.length > 0 && !loading && (
+        <div className="absolute left-0 top-full z-50 mt-1 max-h-80 w-full overflow-y-auto rounded border bg-white shadow-md custom-scrollbar">
+          {searchedProducts.map((product, index) => (
             <Link
+              key={`${product.source}-${product.id}`}
               href={{
                 pathname: `/products/${product.id}`,
                 query: {
                   source: product.source,
                 },
               }}
-              key={`${product.source}-${product.id}`}
-              className={`px-3 flex items-center gap-x-2.5 py-2 ${
-                idx === activeIndex
+              onClick={() => {
+                setQuery("");
+                setActiveIndex(-1);
+              }}
+              className={`flex items-center gap-x-2.5 px-3 py-2 transition-colors ${
+                index === activeIndex
                   ? "bg-gray-200"
                   : "hover:bg-gray-100"
               }`}
@@ -168,12 +199,12 @@ export default function Search() {
                 alt={product.title}
                 width={40}
                 height={40}
-                className="h-10 w-10 object-contain"
+                className="h-10 w-10 shrink-0 object-contain"
               />
 
-              <h1 className="truncate text-black text-sm">
+              <span className="truncate text-sm text-black">
                 {product.title}
-              </h1>
+              </span>
             </Link>
           ))}
         </div>
