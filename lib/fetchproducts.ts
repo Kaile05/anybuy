@@ -1,16 +1,45 @@
 import { Product } from "@/types/product"
 
+type DummyProduct = {
+  id: number
+  title: string
+  price: number
+  description: string
+  category: string
+  thumbnail: string
+  rating: number
+}
+
+type FakeProduct = {
+  id: number
+  title: string
+  price: number
+  description: string
+  category: string
+  image: string
+  rating?: {
+    rate: number
+  }
+}
+
+type DummyProductsResponse = {
+  products: DummyProduct[]
+}
+
 export async function getProducts(): Promise<Product[]> {
-  const [ dummyRes, fakeRes ] = await Promise.all([
+  const [dummyRes, fakeRes] = await Promise.all([
     fetch("https://dummyjson.com/products"),
     fetch("https://fakestoreapi.com/products")
   ])
-  if(!dummyRes.ok || !fakeRes.ok) throw new Error("Failed to Fetch Products.")
 
-  const dummyJson = await dummyRes.json()
-  const fakeData = await fakeRes.json()
+  if (!dummyRes.ok || !fakeRes.ok) {
+    throw new Error("Failed to Fetch Products.")
+  }
 
-  const dummyProducts:Product[] = dummyJson.products.map((item:any)=>({
+  const dummyJson: DummyProductsResponse = await dummyRes.json()
+  const fakeData: FakeProduct[] = await fakeRes.json()
+
+  const dummyProducts: Product[] = dummyJson.products.map((item) => ({
     id: item.id + 1000,
     title: item.title,
     price: item.price,
@@ -21,7 +50,7 @@ export async function getProducts(): Promise<Product[]> {
     source: "Dummy"
   }))
 
-  const fakeProducts:Product[] = fakeData.map((item:any)=>({
+  const fakeProducts: Product[] = fakeData.map((item) => ({
     id: item.id,
     title: item.title,
     price: item.price,
@@ -32,30 +61,37 @@ export async function getProducts(): Promise<Product[]> {
     source: "Fake"
   }))
 
-  return[...dummyProducts,...fakeProducts]
+  return [...dummyProducts, ...fakeProducts]
 }
 
 export async function getCategories(): Promise<string[]> {
   const [dummyRes, fakeRes] = await Promise.all([
     fetch("https://dummyjson.com/products/categories"),
     fetch("https://fakestoreapi.com/products/categories")
-  ]);
+  ])
 
-  if (!dummyRes.ok || !fakeRes.ok) throw new Error("Failed to fetch categories");
+  if (!dummyRes.ok || !fakeRes.ok) {
+    throw new Error("Failed to fetch categories")
+  }
 
-  const dummyCategories = await dummyRes.json();
-  const fakeCategories = await fakeRes.json();
+  const dummyCategories: string[] = await dummyRes.json()
+  const fakeCategories: string[] = await fakeRes.json()
 
-  return [...new Set([...dummyCategories, ...fakeCategories])];
+  return [...new Set([...dummyCategories, ...fakeCategories])]
 }
 
-export async function getSingleProduct(id: number, source: "Fake" | "Dummy"): Promise<Product> {
-  let product: any;
-
+export async function getSingleProduct(
+  id: number,
+  source: "Fake" | "Dummy"
+): Promise<Product> {
   if (source === "Fake") {
-    const res = await fetch(`https://fakestoreapi.com/products/${id}`);
-    if (!res.ok) throw new Error("Failed to fetch Fake product.");
-    product = await res.json();
+    const res = await fetch(`https://fakestoreapi.com/products/${id}`)
+
+    if (!res.ok) {
+      throw new Error("Failed to fetch Fake product.")
+    }
+
+    const product: FakeProduct = await res.json()
 
     return {
       id: product.id,
@@ -66,23 +102,26 @@ export async function getSingleProduct(id: number, source: "Fake" | "Dummy"): Pr
       image: product.image,
       rating: product.rating?.rate || 0,
       source: "Fake"
-    };
-  } else {
-    const realId = id - 1000;
-    const res = await fetch(`https://dummyjson.com/products/${realId}`);
-    if (!res.ok) throw new Error("Failed to fetch Dummy product.");
-    product = await res.json();
+    }
+  }
 
-    return {
-      id: product.id + 1000,
-      title: product.title,
-      price: product.price,
-      description: product.description,
-      category: product.category,
-      image: product.thumbnail,
-      rating: product.rating,
-      source: "Dummy"
-    };
+  const realId = id - 1000
+  const res = await fetch(`https://dummyjson.com/products/${realId}`)
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch Dummy product.")
+  }
+
+  const product: DummyProduct = await res.json()
+
+  return {
+    id: product.id + 1000,
+    title: product.title,
+    price: product.price,
+    description: product.description,
+    category: product.category,
+    image: product.thumbnail,
+    rating: product.rating,
+    source: "Dummy"
   }
 }
-
