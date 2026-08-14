@@ -36,8 +36,16 @@ export async function getProducts(): Promise<Product[]> {
     }),
   ])
 
-  if (!dummyRes.ok || !fakeRes.ok) {
-    throw new Error("Failed to Fetch Products.")
+  if (!dummyRes.ok) {
+    throw new Error(
+      `DummyJSON failed: ${dummyRes.status} ${dummyRes.statusText}`
+    )
+  }
+
+  if (!fakeRes.ok) {
+    throw new Error(
+      `Fake Store API failed: ${fakeRes.status} ${fakeRes.statusText}`
+    )
   }
 
   const dummyJson: DummyProductsResponse = await dummyRes.json()
@@ -70,7 +78,7 @@ export async function getProducts(): Promise<Product[]> {
 
 export async function getCategories(): Promise<string[]> {
   const [dummyRes, fakeRes] = await Promise.all([
-    fetch("https://dummyjson.com/products/categories", {
+    fetch("https://dummyjson.com/products", {
       cache: "no-store",
     }),
     fetch("https://fakestoreapi.com/products/categories", {
@@ -78,12 +86,20 @@ export async function getCategories(): Promise<string[]> {
     }),
   ])
 
-  if (!dummyRes.ok || !fakeRes.ok) {
-    throw new Error("Failed to fetch categories")
+  if (!dummyRes.ok) {
+    throw new Error(`DummyJSON failed: ${dummyRes.status}`)
   }
 
-  const dummyCategories: string[] = await dummyRes.json()
+  if (!fakeRes.ok) {
+    throw new Error(`Fake Store API failed: ${fakeRes.status}`)
+  }
+
+  const dummyJson: DummyProductsResponse = await dummyRes.json()
   const fakeCategories: string[] = await fakeRes.json()
+
+  const dummyCategories = [
+    ...new Set(dummyJson.products.map((product) => product.category)),
+  ]
 
   return [...new Set([...dummyCategories, ...fakeCategories])]
 }
@@ -98,7 +114,7 @@ export async function getSingleProduct(
     })
 
     if (!res.ok) {
-      throw new Error("Failed to fetch Fake product.")
+      throw new Error(`Fake Store API failed: ${res.status}`)
     }
 
     const product: FakeProduct = await res.json()
@@ -117,15 +133,12 @@ export async function getSingleProduct(
 
   const realId = id - 1000
 
-  const res = await fetch(
-    `https://dummyjson.com/products/${realId}`,
-    {
-      cache: "no-store",
-    }
-  )
+  const res = await fetch(`https://dummyjson.com/products/${realId}`, {
+    cache: "no-store",
+  })
 
   if (!res.ok) {
-    throw new Error("Failed to fetch Dummy product.")
+    throw new Error(`DummyJSON failed: ${res.status}`)
   }
 
   const product: DummyProduct = await res.json()
