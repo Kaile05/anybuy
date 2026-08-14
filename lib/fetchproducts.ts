@@ -27,97 +27,160 @@ type DummyProductsResponse = {
 }
 
 export async function getProducts(): Promise<Product[]> {
-  const [dummyRes, fakeRes] = await Promise.all([
+  const [dummyResult, fakeResult] = await Promise.allSettled([
     fetch("https://dummyjson.com/products", {
       cache: "no-store",
     }),
+
     fetch("https://fakestoreapi.com/products", {
       cache: "no-store",
     }),
   ])
 
-  if (!dummyRes.ok) {
-    throw new Error(
-      `DummyJSON failed: ${dummyRes.status} ${dummyRes.statusText}`
+  const dummyProducts: Product[] = []
+  const fakeProducts: Product[] = []
+
+  // =========================
+  // DummyJSON
+  // =========================
+
+  if (
+    dummyResult.status === "fulfilled" &&
+    dummyResult.value.ok
+  ) {
+    const dummyJson: DummyProductsResponse =
+      await dummyResult.value.json()
+
+    dummyProducts.push(
+      ...dummyJson.products.map((item) => ({
+        id: item.id + 1000,
+        title: item.title,
+        price: item.price,
+        description: item.description,
+        category: item.category,
+        image: item.thumbnail,
+        rating: item.rating,
+        source: "Dummy" as const,
+      }))
     )
   }
 
-  if (!fakeRes.ok) {
-    throw new Error(
-      `Fake Store API failed: ${fakeRes.status} ${fakeRes.statusText}`
+  // =========================
+  // Fake Store API
+  // =========================
+
+  if (
+    fakeResult.status === "fulfilled" &&
+    fakeResult.value.ok
+  ) {
+    const fakeData: FakeProduct[] =
+      await fakeResult.value.json()
+
+    fakeProducts.push(
+      ...fakeData.map((item) => ({
+        id: item.id,
+        title: item.title,
+        price: item.price,
+        description: item.description,
+        category: item.category,
+        image: item.image,
+        rating: item.rating?.rate || 0,
+        source: "Fake" as const,
+      }))
     )
   }
 
-  const dummyJson: DummyProductsResponse = await dummyRes.json()
-  const fakeData: FakeProduct[] = await fakeRes.json()
-
-  const dummyProducts: Product[] = dummyJson.products.map((item) => ({
-    id: item.id + 1000,
-    title: item.title,
-    price: item.price,
-    description: item.description,
-    category: item.category,
-    image: item.thumbnail,
-    rating: item.rating,
-    source: "Dummy",
-  }))
-
-  const fakeProducts: Product[] = fakeData.map((item) => ({
-    id: item.id,
-    title: item.title,
-    price: item.price,
-    description: item.description,
-    category: item.category,
-    image: item.image,
-    rating: item.rating?.rate || 0,
-    source: "Fake",
-  }))
+  // Only throw an error if BOTH APIs fail
+  if (
+    dummyProducts.length === 0 &&
+    fakeProducts.length === 0
+  ) {
+    throw new Error("Both product APIs are unavailable.")
+  }
 
   return [...dummyProducts, ...fakeProducts]
 }
 
+
+// ========================================
+// GET CATEGORIES
+// ========================================
+
 export async function getCategories(): Promise<string[]> {
-  const [dummyRes, fakeRes] = await Promise.all([
-    fetch("https://dummyjson.com/products", {
+  const [dummyResult, fakeResult] = await Promise.allSettled([
+    fetch("https://dummyjson.com/products/category-list", {
       cache: "no-store",
     }),
+
     fetch("https://fakestoreapi.com/products/categories", {
       cache: "no-store",
     }),
   ])
 
-  if (!dummyRes.ok) {
-    throw new Error(`DummyJSON failed: ${dummyRes.status}`)
+  let dummyCategories: string[] = []
+  let fakeCategories: string[] = []
+
+  // DummyJSON categories
+  if (
+    dummyResult.status === "fulfilled" &&
+    dummyResult.value.ok
+  ) {
+    dummyCategories = await dummyResult.value.json()
   }
 
-  if (!fakeRes.ok) {
-    throw new Error(`Fake Store API failed: ${fakeRes.status}`)
+  // Fake Store categories
+  if (
+    fakeResult.status === "fulfilled" &&
+    fakeResult.value.ok
+  ) {
+    fakeCategories = await fakeResult.value.json()
   }
 
-  const dummyJson: DummyProductsResponse = await dummyRes.json()
-  const fakeCategories: string[] = await fakeRes.json()
-
-  const dummyCategories = [
-    ...new Set(dummyJson.products.map((product) => product.category)),
+  const categories = [
+    ...new Set([
+      ...dummyCategories,
+      ...fakeCategories,
+    ]),
   ]
 
-  return [...new Set([...dummyCategories, ...fakeCategories])]
+  // Only throw if both APIs failed
+  if (categories.length === 0) {
+    throw new Error("Both category APIs are unavailable.")
+  }
+
+  return categories
 }
+
+
+// ========================================
+// GET SINGLE PRODUCT
+// ========================================
 
 export async function getSingleProduct(
   id: number,
   source: "Fake" | "Dummy"
 ): Promise<Product> {
+
+  // =========================
+  // Fake Store
+  // =========================
+
   if (source === "Fake") {
-    const res = await fetch(`https://fakestoreapi.com/products/${id}`, {
-      cache: "no-store",
-    })
+    const res = await fetch(
+      `https://fakestoreapi.com/products/${id}`,
+      {
+        cache: "no-store",
+      }
+    )
 
     if (!res.ok) {
-      throw new Error(`Fake Store API failed: ${res.status}`)
+      throw new Error(
+        `Fake Store API failed: ${res.status}`
+      )
     }
 
-    const product: FakeProduct = await res.json()
+    const product: FakeProduct =
+      await res.json()
 
     return {
       id: product.id,
@@ -131,17 +194,28 @@ export async function getSingleProduct(
     }
   }
 
+
+  // =========================
+  // DummyJSON
+  // =========================
+
   const realId = id - 1000
 
-  const res = await fetch(`https://dummyjson.com/products/${realId}`, {
-    cache: "no-store",
-  })
+  const res = await fetch(
+    `https://dummyjson.com/products/${realId}`,
+    {
+      cache: "no-store",
+    }
+  )
 
   if (!res.ok) {
-    throw new Error(`DummyJSON failed: ${res.status}`)
+    throw new Error(
+      `DummyJSON failed: ${res.status}`
+    )
   }
 
-  const product: DummyProduct = await res.json()
+  const product: DummyProduct =
+    await res.json()
 
   return {
     id: product.id + 1000,
