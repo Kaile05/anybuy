@@ -28,8 +28,12 @@ type DummyProductsResponse = {
 
 export async function getProducts(): Promise<Product[]> {
   const [dummyRes, fakeRes] = await Promise.all([
-    fetch("https://dummyjson.com/products"),
-    fetch("https://fakestoreapi.com/products")
+    fetch("https://dummyjson.com/products", {
+      cache: "no-store",
+    }),
+    fetch("https://fakestoreapi.com/products", {
+      cache: "no-store",
+    }),
   ])
 
   if (!dummyRes.ok || !fakeRes.ok) {
@@ -47,7 +51,7 @@ export async function getProducts(): Promise<Product[]> {
     category: item.category,
     image: item.thumbnail,
     rating: item.rating,
-    source: "Dummy"
+    source: "Dummy",
   }))
 
   const fakeProducts: Product[] = fakeData.map((item) => ({
@@ -58,7 +62,7 @@ export async function getProducts(): Promise<Product[]> {
     category: item.category,
     image: item.image,
     rating: item.rating?.rate || 0,
-    source: "Fake"
+    source: "Fake",
   }))
 
   return [...dummyProducts, ...fakeProducts]
@@ -66,8 +70,12 @@ export async function getProducts(): Promise<Product[]> {
 
 export async function getCategories(): Promise<string[]> {
   const [dummyRes, fakeRes] = await Promise.all([
-    fetch("https://dummyjson.com/products/categories"),
-    fetch("https://fakestoreapi.com/products/categories")
+    fetch("https://dummyjson.com/products/categories", {
+      cache: "no-store",
+    }),
+    fetch("https://fakestoreapi.com/products/categories", {
+      cache: "no-store",
+    }),
   ])
 
   if (!dummyRes.ok || !fakeRes.ok) {
@@ -85,7 +93,9 @@ export async function getSingleProduct(
   source: "Fake" | "Dummy"
 ): Promise<Product> {
   if (source === "Fake") {
-    const res = await fetch(`https://fakestoreapi.com/products/${id}`)
+    const res = await fetch(`https://fakestoreapi.com/products/${id}`, {
+      cache: "no-store",
+    })
 
     if (!res.ok) {
       throw new Error("Failed to fetch Fake product.")
@@ -101,12 +111,18 @@ export async function getSingleProduct(
       category: product.category,
       image: product.image,
       rating: product.rating?.rate || 0,
-      source: "Fake"
+      source: "Fake",
     }
   }
 
   const realId = id - 1000
-  const res = await fetch(`https://dummyjson.com/products/${realId}`)
+
+  const res = await fetch(
+    `https://dummyjson.com/products/${realId}`,
+    {
+      cache: "no-store",
+    }
+  )
 
   if (!res.ok) {
     throw new Error("Failed to fetch Dummy product.")
@@ -122,6 +138,6 @@ export async function getSingleProduct(
     category: product.category,
     image: product.thumbnail,
     rating: product.rating,
-    source: "Dummy"
+    source: "Dummy",
   }
 }
