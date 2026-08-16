@@ -121,27 +121,18 @@ http://localhost:3000
 
 Home Page
 
-Add a screenshot of the AnyBuy homepage here.
-
-![AnyBuy Home](./screenshots/home.png)
+<img width="959" height="478" alt="image" src="https://github.com/user-attachments/assets/7b0c74d1-e17c-4405-8936-4aa0772b3fb3" />
+<img width="439" height="459" alt="image" src="https://github.com/user-attachments/assets/8c984f3d-208e-4e6c-9c23-f8f485791ea6" />
 
 Products
 
-Add a screenshot of the product catalog here.
-
-![AnyBuy Products](./screenshots/products.png)
+<img width="950" height="474" alt="image" src="https://github.com/user-attachments/assets/6cada3b9-8762-4106-b63e-efd29adbd4e1" />
+<img width="437" height="463" alt="image" src="https://github.com/user-attachments/assets/820f289c-40b5-4f33-aebb-0395ea1c0993" />
 
 Product Details
 
-Add a screenshot of the product details page here.
-
-![Product Details](./screenshots/product-details.png)
-
-Shopping Cart
-
-Add a screenshot of the shopping cart here.
-
-![Shopping Cart](./screenshots/cart.png)
+<img width="948" height="474" alt="image" src="https://github.com/user-attachments/assets/3f09b436-9156-42b3-8b4b-6c4ddd4782dc" />
+<img width="442" height="463" alt="image" src="https://github.com/user-attachments/assets/f2d0c1f5-abd3-4946-9275-45db12a5acb0" />
 
 🎯 What I Learned
 
