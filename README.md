@@ -4,10 +4,6 @@ A responsive e-commerce web application built with Next.js, React, TypeScript, a
 
 AnyBuy combines product data from multiple public APIs into a unified shopping experience, allowing users to browse products, explore categories, view product details, filter products, and manage items in a shopping cart.
 
-🚀 Live Demo
-
-"Visit AnyBuy" (YOUR_VERCEL_URL_HERE)
-
 ✨ Features
 
 - 🛍️ Product Catalog — Browse products from multiple API sources.
